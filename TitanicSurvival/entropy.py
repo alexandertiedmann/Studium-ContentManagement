@@ -181,7 +181,7 @@ def fareValues(fare):
     fare = pd.cut(fare, bins, labels=groups)
     possibleValues = []
     possibleValues = checkPossibleValues(fare)
-    possibleValues.sort()
+    #possibleValues.sort()
     return possibleValues, fare
 
 

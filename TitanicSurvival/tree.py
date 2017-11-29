@@ -131,3 +131,26 @@ class Tree:
             return
         for nextNode in node.nextNodes:
             self.printTree(tree, nextNode)
+
+    def categorize(self, passengerTest):
+        passengersTest = pd.DataFrame()
+        surv = []
+        for i in range(0, len(passengerTest)):
+            survive = self.categorizeRec(self.dataTree, passengerTest.loc[[i]])
+            surv.append(survive)
+        passengersTest = passengersTest.assign(PassengerId=passengerTest['PassengerId'])
+        passengersTest = passengersTest.assign(Survived=surv)
+        return passengersTest
+
+    def categorizeRec(self, node, passenger):
+        if isinstance(node, Endnode):
+            if node.survived == True:
+                return True
+            elif node.survived == False:
+                return False
+            elif node.survived == None:
+                return None
+        else:
+            for i in range(0, len(node.decisions)):
+                if passenger.iloc[0][node.feature] == node.decisions[i]:
+                    return self.categorizeRec(node.nextNodes[i], passenger)
