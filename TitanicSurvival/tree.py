@@ -1,20 +1,32 @@
 # tree.py
 import pandas as pd
-import Uebung5.storage as store
-import Uebung5.entropy as ent
+import storage as store
+import entropy as ent
 
 
 class Node:
-    def __init__(self, feature):
+    def __init__(self, feature, prenode):
         self.feature = feature
         self.nextNodes = []
         self.decisions = []
+        self.prenode = prenode
 
     def setDecisions(self, decisions):
         self.decisions = decisions
 
     def getDecisions(self):
         return self.decisions
+
+
+class Endnode:
+    def __init__(self, prenode):
+        self.feature = 'Survived'
+        self.survived = None
+        self.counted = [0, 0]
+        self.prenode = prenode
+
+    def setSurvived(self, value):
+        self.survived = value
 
 
 class Tree:
@@ -27,40 +39,34 @@ class Tree:
     def setFeaturelist(self, features):
         self.featurelist = features
 
-    def buildTree(self, dataStorage, passengersTrain):
+    def buildTree(self, dataStorage):
         self.setFeaturelist(store.calcFeatureOrder(dataStorage))
-        self.dataTree = Node(self.featurelist[0])
+        self.dataTree = Node(self.featurelist[0], None)
         self.buildRec(dataStorage, self.dataTree, 0)
-        passengersTrain = self.normalizePassenger(passengersTrain)
-        self.trainTree(passengersTrain)
-        #self.printTree('', self.dataTree)
 
     def buildRec(self, dataStorage, node, position):
+        if isinstance(node, Endnode):
+            return  # Ende wenn Endnode
         # dataStorage: gespeicherte Daten: Feature Name, Feature Entropy, moegliche Werte, Entropien fuer moegliche Werte
         # node: Node des Trees: feature, Array - nachste Nodes, Array - decisions
-        # position: Position in der Featureliste(Array) welches Feature gerade bearbeitet wird
-        if node.feature == 'Survived':
-            node.setDecisions([0, 0])  # setzt Array erst mal auf nicht ueberlebt (wird spaeter anhand der Daten gefuellt)
-            return
         feature = store.getObject(dataStorage, self.featurelist[position])  # feature aus dem Store einlesen
         try:
-            nextFeature = self.featurelist[position + 1] # wenn moeglich naechstes Feature auslesen
-        except (IndexError):
-            nextFeature = 'Survived' # wenn Array zu kurz fuer naechste Node --> Ende also Survived Node
+            nextFeature = self.featurelist[position + 1]
+        except IndexError:
+            nextFeature = 'Survived'
         node.decisions = list(feature.possibleValues)  # moegliche Werte eintragen
-        entropies = feature.entropies # Entropien fuer moegliche Werte holen
-        for valNr in range(0, node.decisions.__len__()): # fuer jeden moegleichen Wert = Entscheidung
-            possibleValueEntropy = entropies[valNr] # Entropie fuer den moeglichen Wert
+        entropies = feature.entropies  # Entropien fuer moegliche Werte holen
+        for valNr in range(0, node.decisions.__len__()):  # fuer jeden moegleichen Wert = Entscheidung
+            possibleValueEntropy = entropies[valNr]  # Entropie fuer den moeglichen Wert
             if possibleValueEntropy > 0:
-                nextNode = Node(nextFeature) # Wenn Entropei fuer moeglichen Wert --> naechste Node bestimmen
-                #nextNode.setDecisions(store.getObject(dataStorage, nextFeature).possibleValues) #und Entscheidungen eintragen
+                if nextFeature != 'Survived':
+                    nextNode = Node(nextFeature, node)  # Wenn Entropei fuer moeglichen Wert --> naechste Node bestimmen
+                else:
+                    nextNode = Endnode(node)  # wenn Entropie 0 --> naechste Node ist Survived (Endentscheidung)
             else:
-                nextNode = Node('Survived') # wenn Entropie 0 --> naechste Node ist Survived (Endentscheidung)
-            node.nextNodes.append(nextNode) # naechste Node an Array in der Node anfuegen
-            try:
-                self.buildRec(dataStorage, nextNode, position + 1)  # naechsten node und zur naechsten Node sprigen
-            except (IndexError):
-                self.buildRec(dataStorage, nextNode, 0)  # nur bei 'Survived' Nodes # zur letzten Node wenn keine uebrig gebliebenen Features
+                nextNode = Endnode(node)  # wenn Entropie 0 --> naechste Node ist Survived (Endentscheidung)
+            node.nextNodes.append(nextNode)  # naechste Node an Array in der Node anfuegen
+            self.buildRec(dataStorage, nextNode, position + 1)  # zur naechsten Node sprigen
 
     def trainTree(self, passengersTrain):
         for i in range(0, len(passengersTrain)):
@@ -68,31 +74,23 @@ class Tree:
         self.trainTreeRec(self.dataTree)
 
     def trainTreeRec(self, node):
-        if node.feature == 'Survived':
-            survived = node.decisions[1]
-            notSurvived = node.decisions[0]
-            if survived > 0 and notSurvived > 0:
-                print(node.decisions)
-            if survived == 0 and notSurvived == 0:
-                print(node.feature, node.decisions)
-            if survived > notSurvived:
-                node.decisions = 'survived'
-            elif survived < notSurvived:
-                node.decisions = 'dead'
-            else:
-                node.decisions = 'FAILED'
+        if isinstance(node, Endnode):
+            if node.counted[1] > node.counted[0]:
+                node.setSurvived(True)
+            elif node.counted[1] < node.counted[0]:
+                node.setSurvived(False)
             return
         else:
             for nextNode in node.nextNodes:
                 self.trainTreeRec(nextNode)
 
     def trainRec(self, node, passenger):
-        if node.feature == 'Survived':
+        if isinstance(node, Endnode):
             surv = passenger['Survived'].item()
             if surv == 1:
-                node.decisions[1] = node.decisions[1] + 1
-            else:
-                node.decisions[0] = node.decisions[0] + 1
+                node.counted[1] = node.counted[1] + 1
+            elif surv == 0:
+                node.counted[0] = node.counted[0] + 1
             return
         for i in range(0, len(node.decisions)):
             comp = passenger.iloc[0][node.feature]
@@ -127,9 +125,9 @@ class Tree:
         return passengersTrain
 
     def printTree(self, tree, node):
-        # print(tree, node.feature, node.decisions, len(node.nextNodes))
-        # tree += '-'
-        if node.feature == 'Survived':
-            print(node.decisions)
+        print(tree, node.feature)
+        tree += '-'
+        if isinstance(node, Endnode):
+            return
         for nextNode in node.nextNodes:
             self.printTree(tree, nextNode)

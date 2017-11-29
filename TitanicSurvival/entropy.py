@@ -1,7 +1,7 @@
 # entropy.py
 import pandas as pd
 import math as mat
-import Uebung5.storage as store
+import storage as store
 
 
 def calcGain(entropy, featureEntropy):

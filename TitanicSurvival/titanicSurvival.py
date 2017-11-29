@@ -1,6 +1,6 @@
 # titanicSurvival.py
-from Uebung5 import entropy as ent
-from Uebung5 import tree
+import entropy as ent
+import tree
 import pandas as pd
 
 ###################Variables#####################
@@ -25,10 +25,17 @@ def writeFiles():
 #####################Exec#################
 # features = ['Survived','PClass','Name,','Sex', 'Age', 'SibSp', 'Parch', 'Cabin', 'Fare', 'Embarked']
 features = list(passengersTrain)
-dataStorage = ent.getEntropys(passengersTrain, features)
+dataStorage = ent.getEntropys(passengersTrain, features)  # berechnen der Entropien
+# build tree
 tree1 = tree.Tree()
-tree1.buildTree(dataStorage, passengersTrain)
-# testdaten durch den baum jagen
+tree1.buildTree(dataStorage)  # Baum erstellen mit den berechneten Entropien in dataStorage
+# train Tree
+passengersTrain = tree1.normalizePassenger(passengersTrain)  # Passagiere normalisieren
+tree1.trainTree(passengersTrain)  # mit normalisierten Passagieren den Baum trainieren
+tree1.printTree('', tree1.dataTree)
+# categorize test-data
+
+# save results in html and csv-file
 passengersTest = passengersTest.assign(Survived=passengersTrain['Survived'])
 passengersResult = passengersTest[['PassengerId', 'Survived']]
 # writeFiles()

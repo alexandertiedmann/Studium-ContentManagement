@@ -1,5 +1,6 @@
 # storage.py
-from Uebung5 import entropy as entrop
+import entropy as entrop
+
 
 class Storage:
     featurename = ''
@@ -12,6 +13,7 @@ class Storage:
         self.possibleValues = values
         self.entropies = entropies
         self.entireEntropy = entireEntropy
+
 
 def getFeatures(dataStorage):
     list = []
@@ -27,6 +29,7 @@ def getObject(dataStorage, feature):
             storage = store
     return storage
 
+
 def calcFeatureOrder(dataStoage):
     featurelist = []
     ent = 0
@@ -38,7 +41,7 @@ def calcFeatureOrder(dataStoage):
     featurelist.sort()
     featurelist.reverse()
     features = []
-    for i in range(0,featurelist.__len__()):
+    for i in range(0, featurelist.__len__()):
         for storage in dataStoage:
             if storage.featurename != 'Survived' and (featurelist[i]) == entrop.calcGain(ent, storage.entireEntropy):
                 features.append(storage.featurename)
