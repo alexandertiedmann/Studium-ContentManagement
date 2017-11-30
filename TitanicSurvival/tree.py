@@ -122,6 +122,10 @@ class Tree:
                 possibleValues, tmppass = ent.fareValues(passenger)
                 passengersTrain.__delitem__(feature)
                 passengersTrain = passengersTrain.assign(Fare=tmppass)
+            elif feature == 'Parch':
+                possibleValues, tmppass = ent.parchValues(passenger)
+                passengersTrain.__delitem__(feature)
+                passengersTrain = passengersTrain.assign(Parch=tmppass)
         return passengersTrain
 
     def printTree(self, tree, node):
@@ -145,12 +149,16 @@ class Tree:
     def categorizeRec(self, node, passenger):
         if isinstance(node, Endnode):
             if node.survived == True:
-                return True
+                return 1
             elif node.survived == False:
-                return False
+                return 0
             elif node.survived == None:
-                return None
+                return 1
         else:
             for i in range(0, len(node.decisions)):
                 if passenger.iloc[0][node.feature] == node.decisions[i]:
                     return self.categorizeRec(node.nextNodes[i], passenger)
+                elif i == len(node.decisions)-1:
+                    print('Feature:', node.feature)
+                    print('Passenger:', passenger[node.feature])
+                    print('')

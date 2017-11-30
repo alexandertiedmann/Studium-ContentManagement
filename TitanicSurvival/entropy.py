@@ -117,7 +117,7 @@ def nameValues(name):
         name = name.replace(' ', '')
         possibleValues.extend([name])
     name = pd.DataFrame.from_dict(possibleValues)
-    name[0] = name[0].replace(['Ms', 'Mlle'], 'Miss')
+    name[0] = name[0].replace(['Ms', 'Mlle', 'Dona'], 'Miss')
     name[0] = name[0].replace('Mme', 'Mrs')
     name[0] = name[0].replace(['Jonkheer', 'Don', 'Major', 'Col', 'Dr', 'Rev', 'Master'], 'Mr')
     name = name[0]
@@ -137,10 +137,13 @@ def ageValues(age):
     mean = pd.DataFrame.mean(age)
     max = pd.DataFrame.max(age)
     min = pd.DataFrame.min(age)
+    age = age.fillna(-1)
     # moegliche Werte
+    #print(age)
     bins = [-1, 0, 5, 12, 18, 25, 35, 60, 120]
-    groups = ['Unknown', 'Baby', 'Child', 'Teenager', 'Student', 'Young Adult', 'Adult', 'Senior']
-    age = pd.cut(age, bins, labels=groups)
+    groups = ['undefined', 'Baby', 'Child', 'Teenager', 'Student', 'Young Adult', 'Adult', 'Senior']
+    age = pd.cut(age, bins, 8, labels=groups)
+    age = age.fillna('undefined') # komischerweise wird bei -1 nicht undefined sondern NaN
     possibleValues = []
     possibleValues = checkPossibleValues(age)
     return possibleValues, age
@@ -154,10 +157,13 @@ def sibSpValues(sibSp):
 
 
 def parchValues(parch):
+    parch = parch.fillna(0)
+    groups = ['keine/kaum', 'wenige', 'ein paar', 'viele', 'sehr viele']
+    parch = pd.cut(parch, 5, labels=groups)
+    #parch = parch.fillna('keine/kaum')
     possibleValues = []
     possibleValues = checkPossibleValues(parch)
-    possibleValues.sort()
-    return possibleValues
+    return possibleValues, parch
 
 
 def cabinValues(cabin):
@@ -176,9 +182,11 @@ def fareValues(fare):
     mean = pd.DataFrame.mean(fare)
     max = pd.DataFrame.max(fare)
     min = pd.DataFrame.min(fare)
+    fare = fare.fillna(-1)
     bins = [-1, 0, 10, 25, 31, 1000]
     groups = ['unk.', '1', '2', '3', '4']
     fare = pd.cut(fare, bins, labels=groups)
+    fare = fare.fillna('unk.') # -1 wird nicht nach unk. sortiert?
     possibleValues = []
     possibleValues = checkPossibleValues(fare)
     #possibleValues.sort()
@@ -215,7 +223,7 @@ def getEntropys(passengersTrain, features):
         elif feature == 'SibSp':
             possibleValues = sibSpValues(passenger)
         elif feature == 'Parch':
-            possibleValues = parchValues(passenger)
+            possibleValues, passenger = parchValues(passenger)
         elif feature == 'Cabin':
             possibleValues, passenger = cabinValues(passenger)
         elif feature == 'Fare':

@@ -39,6 +39,7 @@ tree1.trainTree(passengersTrain)  # mit normalisierten Passagieren den Baum trai
 
 print('4/5 categorize test-data')
 passengersTest = tree1.normalizePassenger(passengersTest)
+#print(passengersTest['Age'])
 passengersTest = tree1.categorize(passengersTest)
 
 print('5/5 save results in html and csv-file')
