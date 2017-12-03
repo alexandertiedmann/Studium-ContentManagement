@@ -1,0 +1,3 @@
+https://www.kaggle.com/c/titanic
+username: a420556127
+Score: 0.75598

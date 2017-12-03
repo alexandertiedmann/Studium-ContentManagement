@@ -5,11 +5,10 @@ import entropy as ent
 
 
 class Node:
-    def __init__(self, feature, prenode):
+    def __init__(self, feature):
         self.feature = feature
         self.nextNodes = []
         self.decisions = []
-        self.prenode = prenode
 
     def setDecisions(self, decisions):
         self.decisions = decisions
@@ -19,11 +18,10 @@ class Node:
 
 
 class Endnode:
-    def __init__(self, prenode):
+    def __init__(self, ):
         self.feature = 'Survived'
         self.survived = None
         self.counted = [0, 0]
-        self.prenode = prenode
 
     def setSurvived(self, value):
         self.survived = value
@@ -39,12 +37,15 @@ class Tree:
     def setFeaturelist(self, features):
         self.featurelist = features
 
-    def buildTree(self, dataStorage):
-        self.setFeaturelist(store.calcFeatureOrder(dataStorage))
-        self.dataTree = Node(self.featurelist[0], None)
+    def buildTree(self, dataStorage, featurelist):
+        self.setFeaturelist(featurelist)
+        self.dataTree = Node(self.featurelist[0])
         self.buildRec(dataStorage, self.dataTree, 0)
 
     def buildRec(self, dataStorage, node, position):
+        if isinstance(node, Node) and node.feature == 'Survived':
+            print(self.featurelist)
+            print('Nodetype:', node.__class__.__name__, 'Notefeature:', node.feature)
         if isinstance(node, Endnode):
             return  # Ende wenn Endnode
         # dataStorage: gespeicherte Daten: Feature Name, Feature Entropy, moegliche Werte, Entropien fuer moegliche Werte
@@ -56,17 +57,46 @@ class Tree:
             nextFeature = 'Survived'
         node.decisions = list(feature.possibleValues)  # moegliche Werte eintragen
         entropies = feature.entropies  # Entropien fuer moegliche Werte holen
-        for valNr in range(0, node.decisions.__len__()):  # fuer jeden moegleichen Wert = Entscheidung
+        for valNr in range(0, len(node.decisions)):  # fuer jeden moegleichen Wert = Entscheidung
+            nextNode = None
             possibleValueEntropy = entropies[valNr]  # Entropie fuer den moeglichen Wert
-            if possibleValueEntropy > 0:
-                if nextFeature != 'Survived':
-                    nextNode = Node(nextFeature, node)  # Wenn Entropei fuer moeglichen Wert --> naechste Node bestimmen
-                else:
-                    nextNode = Endnode(node)  # wenn Entropie 0 --> naechste Node ist Survived (Endentscheidung)
+            if nextFeature == 'Survived':
+                nextNode = Endnode()
             else:
-                nextNode = Endnode(node)  # wenn Entropie 0 --> naechste Node ist Survived (Endentscheidung)
+                if possibleValueEntropy > 0:
+                    nextNode = Node(nextFeature)  # Wenn Entropie fuer moeglichen Wert --> naechste Node bestimmen
+                else:
+                    nextNode = Endnode()  # wenn Entropie 0 --> naechste Node ist Survived (Endentscheidung)
             node.nextNodes.append(nextNode)  # naechste Node an Array in der Node anfuegen
-            self.buildRec(dataStorage, nextNode, position + 1)  # zur naechsten Node sprigen
+            self.buildRec(dataStorage, nextNode, position + 1)  # zur naechsten Node springen
+
+    def buildRandomTree(self, dataStorage, featurelist):
+        self.setFeaturelist(featurelist)
+        self.dataTree = Node(self.featurelist[0])
+        self.buildRandomRec(dataStorage, self.dataTree, 0)
+
+    def buildRandomRec(self, dataStorage, node, position):
+        if isinstance(node, Node) and node.feature == 'Survived':
+            print(self.featurelist)
+            print('Nodetype:', node.__class__.__name__, 'Notefeature:', node.feature)
+        if isinstance(node, Endnode):
+            return  # Ende wenn Endnode
+        # dataStorage: gespeicherte Daten: Feature Name, Feature Entropy, moegliche Werte, Entropien fuer moegliche Werte
+        # node: Node des Trees: feature, Array - nachste Nodes, Array - decisions
+        feature = store.getObject(dataStorage, self.featurelist[position])  # feature aus dem Store einlesen
+        try:
+            nextFeature = self.featurelist[position + 1]
+        except IndexError:
+            nextFeature = 'Survived'
+        node.decisions = list(feature.possibleValues)  # moegliche Werte eintragen
+        for valNr in range(0, len(node.decisions)):  # fuer jeden moegleichen Wert = Entscheidung
+            nextNode = None
+            if nextFeature == 'Survived':
+                nextNode = Endnode()
+            else:
+                nextNode = Node(nextFeature)  # Wenn Entropie fuer moeglichen Wert --> naechste Node bestimmen
+            node.nextNodes.append(nextNode)  # naechste Node an Array in der Node anfuegen
+            self.buildRec(dataStorage, nextNode, position + 1)  # zur naechsten Node springen
 
     def trainTree(self, passengersTrain):
         for i in range(0, len(passengersTrain)):
@@ -92,14 +122,16 @@ class Tree:
             elif surv == 0:
                 node.counted[0] = node.counted[0] + 1
             return
-        for i in range(0, len(node.decisions)):
-            comp = passenger.iloc[0][node.feature]
-            decision = node.decisions[i]
-            if decision == comp:
-                nextNode = node.nextNodes[i]
-                self.trainRec(nextNode, passenger)
-            elif i == len(node.decisions):
-                return
+        else:
+            for i in range(0, len(node.decisions)):
+                comp = passenger.iloc[0][node.feature]
+                decision = node.decisions[i]
+                if decision == comp:
+                    nextNode = node.nextNodes[i]
+                    self.trainRec(nextNode, passenger)
+                elif i == len(node.decisions):
+                    print('Nicht in einem Fach gelandet')
+                    return
 
     def normalizePassenger(self, passengersTrain):
         features = list(passengersTrain)
@@ -126,15 +158,11 @@ class Tree:
                 possibleValues, tmppass = ent.parchValues(passenger)
                 passengersTrain.__delitem__(feature)
                 passengersTrain = passengersTrain.assign(Parch=tmppass)
+            elif feature == 'Embarked':
+                possibleValues, tmppass = ent.embarkedValues(passenger)
+                passengersTrain.__delitem__(feature)
+                passengersTrain = passengersTrain.assign(Embarked=tmppass)
         return passengersTrain
-
-    def printTree(self, tree, node):
-        print(tree, node.feature)
-        tree += '-'
-        if isinstance(node, Endnode):
-            return
-        for nextNode in node.nextNodes:
-            self.printTree(tree, nextNode)
 
     def categorize(self, passengerTest):
         passengersTest = pd.DataFrame()
@@ -153,12 +181,16 @@ class Tree:
             elif node.survived == False:
                 return 0
             elif node.survived == None:
-                return 1
+                return 'NONE'
+            else:
+                return 'NONE'
         else:
+            if isinstance(node, Node) and node.feature == 'Survived':
+                print('Nodetype:', node.__class__.__name__, 'Notefeature:', node.feature)
             for i in range(0, len(node.decisions)):
                 if passenger.iloc[0][node.feature] == node.decisions[i]:
                     return self.categorizeRec(node.nextNodes[i], passenger)
-                elif i == len(node.decisions)-1:
-                    print('Feature:', node.feature)
-                    print('Passenger:', passenger[node.feature])
-                    print('')
+                elif i == len(node.decisions) - 1:
+                    print('Categorize failed for:')
+                    print('Feature:', node.feature, 'Passenger:', passenger[node.feature])
+                    return 'NONE'

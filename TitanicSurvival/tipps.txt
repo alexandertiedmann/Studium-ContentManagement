@@ -1,6 +1,0 @@
-- aus Pandas Liste (alle Namen)
-        passengersTrain['Name']
-- aus Pandas Liste (zwei Spalten)
-        passengersTrain[['Pclass','Survived']]
-- aus Array ein Pandas Liste
-        pdList = pd.DataFrame.from_dict(Array)

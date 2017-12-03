@@ -47,16 +47,16 @@ def callTotalEntropy(item, possibleValues):
 def calcFeatureEntropy(data, possibleValues, survived):
     # noetige Arrays erstellen
     numberValues = list(possibleValues)
-    for i in range(0, numberValues.__len__()):
+    for i in range(0, len(numberValues)):
         numberValues[i] = 0
     entropyValues = list(possibleValues)
-    for i in range(0, numberValues.__len__()):
+    for i in range(0, len(numberValues)):
         numberValues[i] = 0
     entropyValues = list(possibleValues)
+    for i in range(0, len(entropyValues)):
+        entropyValues[i] = 0
 
     # berechnungen
-    for i in range(0, entropyValues.__len__()):
-        entropyValues[i] = 0
     # Entropy fuer jeden Wert
     for i in range(0, len(possibleValues)):
         val = possibleValues[i]
@@ -123,6 +123,7 @@ def nameValues(name):
     name = name[0]
     possibleValues.sort()
     possibleValues = checkPossibleValues(name)
+    print(possibleValues)
     return possibleValues, name
 
 
@@ -197,7 +198,7 @@ def embarkedValues(embarked):
     embarked = embarked.fillna('S')  # leere mit 'S' <-- 2 stueck
     possibleValues = []
     possibleValues = checkPossibleValues(embarked)
-    return possibleValues
+    return possibleValues, embarked
 
 
 def getEntropys(passengersTrain, features):
@@ -229,7 +230,7 @@ def getEntropys(passengersTrain, features):
         elif feature == 'Fare':
             possibleValues, passenger = fareValues(passenger)
         elif feature == 'Embarked':
-            possibleValues = embarkedValues(passenger)
+            possibleValues, passenger = embarkedValues(passenger)
         if feature != 'Survived':
             sumEntropy, entropyValues = calcFeatureEntropy(passenger, possibleValues, passengersTrain['Survived'])
             entropyStorage = store.Storage(feature, possibleValues, entropyValues, sumEntropy)  # Datenhaltung fuer ein Feature
