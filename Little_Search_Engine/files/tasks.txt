@@ -1,0 +1,22 @@
+Implement a search engine in Python.
+a) Implement a crawler. You may use the library scrapy.
+
+b) Crawl all reachable documents starting from the following URLs
+    • http://people.f4.htw-berlin.de/~zhangg/pages/teaching/pages/d01.html
+    • http://people.f4.htw-berlin.de/~zhangg/pages/teaching/pages/d06.html
+    • http://people.f4.htw-berlin.de/~zhangg/pages/teaching/pages/d08.html
+   Your crawler should retrieve all eight documents (from d01 to d08)
+
+c) Calculate the PageRanks of the downloaded pages. Use teleportation rate t = 0.05 and
+   δ = 0.04. Save the ranks in a file rank.txt.
+
+d) Build a tf-Index for the words contained in the documents. Use the file stop words.txt
+   (available in moodle) a your list of stop words. Save your index in a file index.txt.
+
+e) Implement a function search to search for documents containing given words. Use the tfidf
+   weight and cosine similarity as presented in the lecture. Do sample searches use the
+   single-word-queries tokens, index, classification, and the two-word-query tokens and
+   classification. Save your search results in a file tfidf search.txt
+
+f) Extend your search function and include PageRank to score the documents. Repeat your
+   search. Save your results in a file pageranke search.txt.

@@ -1,0 +1,8 @@
+./scraper/d08.html: 0.02109375
+./scraper/d01.html: 0.11015625
+./scraper/d05.html: 0.11015625
+./scraper/d02.html: 0.12005208333333332
+./scraper/d03.html: 0.12005208333333332
+./scraper/d06.html: 0.13984375
+./scraper/d07.html: 0.13984375
+./scraper/d04.html: 0.23880208333333333
