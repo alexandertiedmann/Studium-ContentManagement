@@ -1,0 +1,4 @@
+['./scraper/d01.html', './scraper/d02.html', './scraper/d03.html', './scraper/d04.html', './scraper/d08.html']
+['./scraper/d04.html', './scraper/d05.html', './scraper/d08.html']
+['./scraper/d06.html', './scraper/d07.html', './scraper/d08.html']
+['./scraper/d08.html']

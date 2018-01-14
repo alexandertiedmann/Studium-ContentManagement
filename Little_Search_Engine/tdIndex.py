@@ -2,6 +2,7 @@
 from bs4 import BeautifulSoup
 import json
 import numpy as np
+import math
 
 
 class Word:
@@ -9,7 +10,7 @@ class Word:
         self.word = word
         self.totalOccour = 0
         # Liste mit seite und vorkommen (anzahl) auf dieser Seite
-        # nahc: [['seite', 2],['seite', 4]]
+        # nach: [['seite', 2],['seite', 4]]
         self.sitewords = []
 
     # Pruefung ob Page bereits fuer dieses Wort existiert
@@ -47,8 +48,17 @@ class Word:
             string = string + site[0].file + ': ' + str(site[1]) + '\n'
         return string
 
+    # Anzahl der Treffer vom Wort in page
+    # page und Anzahl woerter fuer diese page
+    def getTF(self, page, counted):
+        occour = 0
+        for siteword in self.sitewords:
+            if page == siteword[0]:
+                occour = siteword[1]
+        return (occour / counted)
+
     # Gibt die Gesamtanzahl des Wortes in allen Dokumenten an
-    def getTFWeight(self):
+    def getCF(self):
         counter = 0
         for siteword in self.sitewords:
             counter = counter + siteword[1]
@@ -67,6 +77,7 @@ class Index:
         self.__numPages = 0  # Anzahl aller Dokumente
         self.wordlist = []  # Liste mit allen Woertern die in den Dokumenten vorkommen
         self.wordslist = []  # Liste mit Word-Objekten
+        self.__siteWords = []  # Liste mit Anzahl der Woerter pro Dokument ([page, anzahl], [page, anzahl])
         self.__getStopWords()
 
     def __getStopWords(self):
@@ -89,26 +100,29 @@ class Index:
     # scheibt Listen
     # 1. Liste aller Woerter in allen Dokumenten (ohne stop-words) ohne doppelte
     # 2. Liste aus Word-Objekten
+    # 3. Liste aus Anzahl der Worte pro Seite
     def __buildWordList(self, pages):
         for page in pages.pages:
             cleanstring = self.__getCleanString(page)
-
+            wordsitecounter = 0
             ## Woerter der Page auslesen
             words = cleanstring.split(' ')  # hier bilden sich 'leere' woerter
             for word in words:
                 # leere woerter filtern sowie einzelne Buchstaben und Stop-words raus filtern
                 if word and word not in self.__stopwords and len(word) > 1:
+                    wordsitecounter = wordsitecounter + 1  # zaehlt die Woerter fuer dieses Dokument
                     word = str(word).lower()  # to lower
                     # wenn noch nicht drinn dann in Liste der Woerter einfuegen
                     if word not in self.wordlist:
                         self.wordlist.append(word)
-                    if self.__wordInList(word):
-                        wordInst = self.__getWordInst(word)
+                    if self.wordInList(word):
+                        wordInst = self.getWordInst(word)
                         wordInst.counterSiteWord(page)
                     else:
                         newInst = Word(word)
                         newInst.counterSiteWord(page)
                         self.wordslist.append(newInst)
+            self.__siteWords.append([page, wordsitecounter])
             self.wordlist.sort()  # wort-list sortieren
 
     # wirft alle HTML-Tags weg und laesst den reinen Inhalt stehen
@@ -128,7 +142,7 @@ class Index:
         return newstring
 
     # gibt an ob es fuer das gegebene Word bereits eine Instanz in wordslist[] gibt
-    def __wordInList(self, searchWord):
+    def wordInList(self, searchWord):
         found = False
         for word in self.wordslist:
             if word.word == searchWord:
@@ -136,7 +150,7 @@ class Index:
         return found
 
     # Gibt die Wort Instanz aus dem wordslist[] fuer das gegebene wort
-    def __getWordInst(self, searchWord):
+    def getWordInst(self, searchWord):
         for word in self.wordslist:
             if word.word == searchWord:
                 return word
@@ -168,23 +182,37 @@ class Index:
             file.write(str(word.toString()))
         file.close()
 
-    def calcIDFWeight(self, word):
-        if self.__wordInList(word):
-            inst = self.__getWordInst(word)
+    # gibt die Anzahl der Woerter auf dieser Seite an
+    def __getWordsinPage(self, page):
+        for arr in self.__siteWords:
+            if arr[0] == page:
+                return arr[1]
+
+    def calcIDF(self, word):
+        if self.wordInList(word):
+            inst = self.getWordInst(word)
             df = inst.getDF()  # Anzahl der Dokumente in denen das Wort vorkommt
             n = self.__numPages  # Anzahl der Dokumente
-            idf = np.log10((n / df))
+            idf = np.log((n / (1 + df)))
             return idf
         else:
             return 0
 
-    def calcTFIDFWeight(self, word):
-        if self.__wordInList(word):
-            inst = self.__getWordInst(word)
-            df = inst.getDF()  # Anzahl der Dokumente in denen das Wort vorkommt
-            n = self.__numPages  # Anzahl der Dokumente
-            tf = inst.getTFWeight()
-            tfidfw = (1 + np.log(tf)) * np.log(n / df)
+    # Berechnet den TFIDF fuer ein Word und eine Seite
+    def calcTFIDF(self, word, page):
+        if self.wordInList(word):
+            inst = self.getWordInst(word)
+            wordsOnSite = self.__getWordsinPage(page)
+            tf = inst.getTF(page, wordsOnSite)  # Treffer des Wortes auf der Seite
+            idf = self.calcIDF(word)
+            tfidfw = tf * idf
             return tfidfw
         else:
             return 0
+
+    # Berechnet die cosine similarity fuer zwei Vektoren
+    def cosineSimilarityScore(self, vecQuer, vecDoc):
+        dotProduct = np.dot(vecQuer, vecDoc)
+        normQuer = np.linalg.norm(vecQuer)
+        normDoc = np.linalg.norm(vecDoc)
+        return dotProduct / (normQuer * normDoc)

@@ -127,8 +127,15 @@ class Pages:
 
     # gibt die nach dem Pagerank sortierten Seiten zurueck
     def getSortedPages(self):
-        return sorted(self.pages, key=lambda page: page.rank)  # sort by rank
+        return sorted(self.pages, key=lambda page: page.rank, reverse=True)  # sort by rank
 
+    # Gibt das entsprechende Page-Objekt aus fuer einen Link
+    def getPageFromList(self, pagelink):
+        for page in self.pages:
+            if page.file == pagelink:
+                return page
+
+    # Schreibt die Ranks in ein File
     def ranksToFiles(self, filepath):
         list = []
         for page in self.getSortedPages():
@@ -141,5 +148,6 @@ class Pages:
         filepathTXT = filepath + '.txt'
         file = open(filepathTXT, 'w')
         for page in self.getSortedPages():
+            print(str(page.file) + ': ' + str(page.rank))
             file.write(str(page.file) + ': ' + str(page.rank) + '\n')
         file.close()
